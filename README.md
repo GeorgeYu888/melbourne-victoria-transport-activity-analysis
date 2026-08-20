@@ -14,6 +14,15 @@ The repository includes three connected case studies:
 
 See `CASE_STUDIES.md` for the detailed portfolio summary.
 
+## Professional Deliverables
+
+- `outputs/transport_policy_dashboard.html` - executive dashboard with KPI cards, trend, recovery analysis, mode share and evidence tables.
+- `outputs/policy_brief.md` - one-page policy brief.
+- `CASE_STUDIES.md` - three-part transport policy analytics portfolio summary.
+- `METHODOLOGY.md` - reproducible workflow and rationale for Python, SQL and AI Agent support.
+- `DATA_DICTIONARY.md` - field definitions, metric definitions and data quality notes.
+- `STAKEHOLDER_BRIEFING.md` - executive message, interpretation and recommended next analysis.
+
 ## Policy Question
 
 How has Victorian public transport patronage changed by mode, and what does the recovery pattern suggest for transport planning, stakeholder discussion and further evidence gathering?
@@ -36,6 +45,9 @@ How has Victorian public transport patronage changed by mode, and what does the 
 
 ```text
 CASE_STUDIES.md
+DATA_DICTIONARY.md
+METHODOLOGY.md
+STAKEHOLDER_BRIEFING.md
 data/
   raw/
     monthly_public_transport_patronage_by_mode.csv
@@ -54,6 +66,7 @@ outputs/
     mode_share.csv
     recovery_vs_2019.csv
   policy_brief.md
+  transport_policy_dashboard.html
 sql/
   analysis_queries.sql
 src/
@@ -67,7 +80,7 @@ pip install -r requirements.txt
 python src/analyse_transport_patronage.py
 ```
 
-The script creates cleaned datasets, a SQLite database, dashboard-ready CSV files, SVG charts and a policy brief.
+The script creates cleaned datasets, a SQLite database, dashboard-ready CSV files, SVG charts, an HTML dashboard and a policy brief.
 
 ## Analysis Steps
 
