@@ -14,6 +14,7 @@ DASHBOARD_DIR = PROJECT_DIR / "outputs" / "dashboard_data"
 CHART_DIR = PROJECT_DIR / "outputs" / "charts"
 BRIEF_PATH = PROJECT_DIR / "outputs" / "policy_brief.md"
 HTML_DASHBOARD_PATH = PROJECT_DIR / "outputs" / "transport_policy_dashboard.html"
+REPORT_PATH = PROJECT_DIR / "REPORT.md"
 DB_PATH = PROCESSED_DIR / "transport_patronage.sqlite"
 
 
@@ -190,6 +191,142 @@ def export_dashboard_data(results: dict[str, pd.DataFrame], wide: pd.DataFrame, 
         df.to_csv(DASHBOARD_DIR / f"{name}.csv", index=False)
 
 
+def build_priority_matrix(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    latest_share = results["latest_complete_year_mode_share"]
+    recovery = results["recovery_vs_2019"]
+    matrix = latest_share.merge(recovery, on="mode")
+    matrix["baseline_gap_pct"] = (100 - matrix["recovery_pct"]).round(2)
+    matrix["system_gap_weight"] = (matrix["mode_share_pct"] * matrix["baseline_gap_pct"].clip(lower=0)).round(2)
+
+    def classify(row: pd.Series) -> str:
+        if row["mode_share_pct"] >= 25 and row["recovery_pct"] < 85:
+            return "Highest diagnostic priority"
+        if row["mode_share_pct"] >= 15 and row["recovery_pct"] < 90:
+            return "High diagnostic priority"
+        if row["recovery_pct"] >= 100:
+            return "Growth and capacity monitoring"
+        return "Monitor and investigate locally"
+
+    def next_evidence(row: pd.Series) -> str:
+        mode = str(row["mode"])
+        if "Train" in mode and "Metropolitan" in mode:
+            return "Station/corridor patronage, peak-period loads, reliability, service frequency, CBD and employment-centre travel demand"
+        if "Tram" in mode:
+            return "Route-level boardings, tram travel-time reliability, CBD/inner-city land-use context, signal delay and event patterns"
+        if "Bus" in mode and "Metropolitan" in mode:
+            return "Route boardings, transfer nodes, bus travel-time reliability, road congestion, bus priority and signal-priority candidates"
+        if "V/Line" in mode:
+            return "Corridor growth, load factors, reliability, timetable capacity, regional population and employment access"
+        return "Route-level demand, service frequency, reliability and regional access context"
+
+    def policy_action(row: pd.Series) -> str:
+        mode = str(row["mode"])
+        if row["priority_band"] == "Highest diagnostic priority":
+            return "Prepare a metro deep dive before recommending service or investment options"
+        if row["priority_band"] == "High diagnostic priority":
+            return "Identify route/corridor drivers and separate peak, off-peak, weekday and weekend demand"
+        if row["priority_band"] == "Growth and capacity monitoring":
+            return "Monitor whether above-baseline demand is creating capacity, reliability or access pressure"
+        if "Bus" in mode:
+            return "Use route-level evidence to test targeted service reliability and priority interventions"
+        return "Continue monitoring and add local evidence before making a policy recommendation"
+
+    matrix["priority_band"] = matrix.apply(classify, axis=1)
+    matrix["next_evidence_needed"] = matrix.apply(next_evidence, axis=1)
+    matrix["suggested_policy_action"] = matrix.apply(policy_action, axis=1)
+    return matrix[
+        [
+            "mode",
+            "annual_patronage",
+            "mode_share_pct",
+            "baseline_2019",
+            "latest_year",
+            "recovery_pct",
+            "baseline_gap_pct",
+            "system_gap_weight",
+            "priority_band",
+            "next_evidence_needed",
+            "suggested_policy_action",
+        ]
+    ].sort_values(["system_gap_weight", "mode_share_pct"], ascending=False)
+
+
+def build_network_summary(results: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    annual_by_mode = results["annual_by_mode"].copy()
+    annual_by_mode["network_group"] = annual_by_mode["mode"].apply(
+        lambda mode: "Metropolitan" if mode.startswith("Metropolitan") else "Regional/VLine"
+    )
+    latest_year = int(results["annual_total"]["year"].max() - 1)
+    baseline = annual_by_mode[annual_by_mode["year"] == 2019]
+    latest = annual_by_mode[annual_by_mode["year"] == latest_year]
+    baseline_summary = baseline.groupby("network_group", as_index=False)["annual_patronage"].sum()
+    latest_summary = latest.groupby("network_group", as_index=False)["annual_patronage"].sum()
+    summary = latest_summary.merge(baseline_summary, on="network_group", suffixes=("_latest", "_2019"))
+    total_latest = summary["annual_patronage_latest"].sum()
+    summary["mode_group_share_pct"] = (100 * summary["annual_patronage_latest"] / total_latest).round(2)
+    summary["recovery_vs_2019_pct"] = (
+        100 * summary["annual_patronage_latest"] / summary["annual_patronage_2019"]
+    ).round(2)
+    return summary.sort_values("annual_patronage_latest", ascending=False)
+
+
+def build_recommendation_matrix(priority_matrix: pd.DataFrame, network_summary: pd.DataFrame) -> pd.DataFrame:
+    metro_share = float(
+        network_summary.loc[
+            network_summary["network_group"] == "Metropolitan", "mode_group_share_pct"
+        ].iloc[0]
+    )
+    regional_recovery = float(
+        network_summary.loc[
+            network_summary["network_group"] == "Regional/VLine", "recovery_vs_2019_pct"
+        ].iloc[0]
+    )
+    return pd.DataFrame(
+        [
+            {
+                "decision_area": "Metropolitan rail and tram recovery",
+                "evidence_connection": f"Metropolitan modes carry {metro_share:.1f}% of 2025 patronage, while metro train and tram remain below 80% of their 2019 baseline.",
+                "recommendation": "Commission a corridor/station/route diagnostic that separates peak/off-peak, weekday/weekend, reliability, service level and land-use effects.",
+                "why_it_matters": "A weak recovery in high-share modes has the largest system-wide patronage and revenue implications.",
+            },
+            {
+                "decision_area": "Regional/VLine growth pressure",
+                "evidence_connection": f"Regional/VLine patronage has recovered to {regional_recovery:.1f}% of 2019, with V/Line Train and Coach above baseline.",
+                "recommendation": "Monitor corridor capacity, reliability and regional access outcomes so above-baseline demand is visible before it becomes an operational constraint.",
+                "why_it_matters": "Strong recovery in a smaller share of the network can still signal important growth pressure and equity/access questions.",
+            },
+            {
+                "decision_area": "Bus and road-interface opportunities",
+                "evidence_connection": "Metropolitan bus has a material share of 2025 patronage and sits between rail/tram weakness and V/Line strength.",
+                "recommendation": "Add route-level boardings, travel-time reliability, road congestion and intersection delay data to identify bus priority or signal-priority opportunities.",
+                "why_it_matters": "Bus improvements often depend on the road network, so patronage analysis should connect with traffic flow and signal performance evidence.",
+            },
+            {
+                "decision_area": "Executive reporting discipline",
+                "evidence_connection": "The current dataset supports monthly strategic monitoring but not causal or corridor-level conclusions.",
+                "recommendation": "Maintain a monthly dashboard, exception list and evidence log, and label each recommendation as monitor, investigate, trial or implement.",
+                "why_it_matters": "This keeps advice decision-ready while preventing overclaiming from mode-level patronage alone.",
+            },
+        ]
+    )
+
+
+def markdown_table(df: pd.DataFrame) -> str:
+    table = df.copy()
+    for col in table.columns:
+        if pd.api.types.is_float_dtype(table[col]):
+            table[col] = table[col].map(lambda value: f"{value:.2f}")
+        else:
+            table[col] = table[col].astype(str)
+
+    headers = list(table.columns)
+    rows = table.values.tolist()
+    header_row = "| " + " | ".join(headers) + " |"
+    separator = "| " + " | ".join("---" for _ in headers) + " |"
+    body = ["| " + " | ".join(row) + " |" for row in rows]
+    return "\n".join([header_row, separator, *body])
+
+
 def svg_bar_chart(df: pd.DataFrame, label_col: str, value_col: str, path: Path, title: str) -> None:
     rows = df[[label_col, value_col]].copy()
     rows[value_col] = pd.to_numeric(rows[value_col])
@@ -220,12 +357,14 @@ def svg_bar_chart(df: pd.DataFrame, label_col: str, value_col: str, path: Path, 
 def write_policy_brief(results: dict[str, pd.DataFrame], long_df: pd.DataFrame) -> None:
     annual_total = results["annual_total"]
     recovery = results["recovery_vs_2019"]
+    priority_matrix = results["action_priority_matrix"]
     latest_year = int(annual_total["year"].max() - 1)
     latest_total = int(annual_total.loc[annual_total["year"] == latest_year, "total_patronage"].iloc[0])
     baseline_2019 = int(annual_total.loc[annual_total["year"] == 2019, "total_patronage"].iloc[0])
     recovery_total = latest_total / baseline_2019 * 100
     top_recovery = recovery.iloc[0]
     weakest_recovery = recovery.iloc[-1]
+    top_priority = priority_matrix.iloc[0]
     latest_month = pd.to_datetime(long_df["date"]).max().strftime("%B %Y")
 
     BRIEF_PATH.write_text(
@@ -248,15 +387,20 @@ This project analyses DTP/DataVic monthly public transport patronage by mode to 
 3. Produced dashboard-ready CSV outputs for annual patronage, mode share, latest 12 months and recovery against 2019.
 4. Generated simple chart outputs and a policy-style brief focused on findings, limitations and next steps.
 
-## Key Findings
+## Key Findings And Interpretation
 
 1. Total patronage in {latest_year} was {latest_total:,}, equivalent to {recovery_total:.1f}% of the 2019 pre-COVID baseline of {baseline_2019:,}.
 2. The strongest recovery against 2019 was {top_recovery['mode']} at {top_recovery['recovery_pct']}% of baseline.
 3. The weakest recovery against 2019 was {weakest_recovery['mode']} at {weakest_recovery['recovery_pct']}% of baseline.
+4. The highest action-priority mode is {top_priority['mode']}, because it combines large 2025 mode share with a material recovery gap against 2019.
 
 ## Policy Relevance
 
-The analysis helps identify which public transport modes have recovered more strongly and which may need closer investigation. For DTP-style policy work, this evidence could support questions about service planning, network demand, mode-specific pressures, stakeholder priorities and where more granular corridor, land-use or timetable analysis may be required.
+The analysis helps identify which public transport modes have recovered more strongly and which may need closer investigation. The key policy point is not only whether a mode is above or below baseline; it is whether the mode is large enough to affect the system and whether its recovery pattern points to a concrete next evidence step.
+
+## Recommended Action
+
+Use the action-priority matrix to separate monitoring questions from investigation questions. For metropolitan rail, tram and bus, the next useful evidence would include corridor, station or route-level patronage, peak/off-peak demand, reliability, service frequency, traffic flow, signal delay and land-use context. For V/Line and regional services, the next useful evidence would include capacity, reliability and regional access monitoring.
 
 ## Limitations
 
@@ -270,6 +414,146 @@ The analysis helps identify which public transport modes have recovered more str
 2. Compare mode-level trends with service frequency, reliability and major project delivery data.
 3. Build a dashboard for non-technical stakeholders showing trend, recovery, mode share and limitations.
 4. Extend the project with corridor or station-level datasets if available.
+""",
+        encoding="utf-8",
+    )
+
+
+def write_policy_report(results: dict[str, pd.DataFrame], long_df: pd.DataFrame) -> None:
+    annual_total = results["annual_total"]
+    priority_matrix = results["action_priority_matrix"]
+    network_summary = results["network_group_summary"]
+    recommendations = results["recommendation_matrix"]
+    latest_year = int(annual_total["year"].max() - 1)
+    latest_total = int(annual_total.loc[annual_total["year"] == latest_year, "total_patronage"].iloc[0])
+    baseline_2019 = int(annual_total.loc[annual_total["year"] == 2019, "total_patronage"].iloc[0])
+    recovery_total = latest_total / baseline_2019 * 100
+    latest_month = pd.to_datetime(long_df["date"]).max().strftime("%B %Y")
+    metro = network_summary.loc[network_summary["network_group"] == "Metropolitan"].iloc[0]
+    regional = network_summary.loc[network_summary["network_group"] == "Regional/VLine"].iloc[0]
+    top_priority = priority_matrix.iloc[0]
+    second_priority = priority_matrix.iloc[1]
+    strongest = priority_matrix.sort_values("recovery_pct", ascending=False).iloc[0]
+    weakest = priority_matrix.sort_values("recovery_pct", ascending=True).iloc[0]
+
+    priority_md = markdown_table(priority_matrix[
+        [
+            "mode",
+            "mode_share_pct",
+            "recovery_pct",
+            "baseline_gap_pct",
+            "system_gap_weight",
+            "priority_band",
+            "suggested_policy_action",
+        ]
+    ])
+    recommendation_md = markdown_table(recommendations)
+
+    REPORT_PATH.write_text(
+        f"""# Melbourne/Victoria Transport Policy Analytics Report
+
+## Executive Summary
+
+This report analyses open DTP/DataVic monthly public transport patronage by mode from January 2018 to {latest_month}. The purpose is not only to describe recovery, but to translate the evidence into a practical policy work program: which parts of the network deserve deeper diagnosis, what data should be added next, and what recommendations could be prepared for decision-makers.
+
+The main finding is that Victorian public transport patronage has recovered substantially but unevenly. Total 2025 patronage was {latest_total:,}, equal to {recovery_total:.1f}% of the 2019 baseline. The important policy connection is that metropolitan modes still carry {metro['mode_group_share_pct']:.1f}% of 2025 patronage, but metropolitan train and tram remain below 80% of their 2019 baseline. That means the largest system impact is not simply where recovery is lowest; it is where weak recovery overlaps with a large share of total travel.
+
+The action-priority matrix identifies {top_priority['mode']} as the highest diagnostic priority, followed by {second_priority['mode']}. V/Line and regional services tell a different story: {strongest['mode']} has recovered to {strongest['recovery_pct']:.1f}% of 2019, and Regional/VLine services as a group have recovered to {regional['recovery_vs_2019_pct']:.1f}%. That should be treated as a growth and capacity monitoring question rather than the same type of recovery-gap problem.
+
+## Policy Question
+
+How has public transport activity in Melbourne and Victoria changed by mode, and what does the connection between recovery, mode share and operational evidence suggest for policy analysis, stakeholder advice and next-stage transport planning?
+
+## Data Used
+
+- Source: DTP/DataVic monthly public transport patronage by mode.
+- Coverage in downloaded file: January 2018 to {latest_month}.
+- Modes: Metropolitan Train, Metropolitan Tram, Metropolitan Bus, V/Line Train, V/Line Coach and Regional Bus.
+- Analytical baseline: 2019 is used as the pre-COVID comparison year.
+- Latest complete year: {latest_year}. The file includes 2026 year-to-date records, but 2026 is not used as a complete-year comparison.
+
+## How The Data Was Processed
+
+Python was used to make the workflow repeatable and auditable. The script standardises column names, converts year and month into a monthly date field, cleans patronage values and reshapes the source from wide mode columns into a long analytical table with one row per month and mode.
+
+One source-data quality issue was identified: a Regional Bus value contained text after the numeric count (`940930Jan-25`). The cleaning function extracts the leading numeric value and preserves it as a patronage count. This is recorded because public-sector analysis needs a visible evidence trail, not hidden cleaning assumptions.
+
+SQLite was used to run repeatable SQL queries for annual patronage, mode share, latest 12-month records, recovery against 2019 and year-on-year change. The workflow exports dashboard-ready CSVs, chart files, an HTML dashboard and this report.
+
+## Analytical Framework
+
+The three case studies are connected by a single policy logic:
+
+1. Recovery against 2019 shows whether activity has returned to the pre-COVID baseline.
+2. Mode share shows whether a mode is large enough to materially affect the total system.
+3. Action priority combines the two, so the analysis points to where a manager should ask for the next evidence pack.
+
+This matters because a mode can have strong recovery but small total share, or weak recovery but large total share. Those situations require different policy responses.
+
+## Findings
+
+### The network has recovered, but the remaining gap is concentrated where the system is largest
+
+Total 2025 patronage reached {latest_total:,}, or {recovery_total:.1f}% of 2019. This is a strong recovery signal at the aggregate level, but it does not mean the network has returned uniformly to its pre-COVID pattern.
+
+Metropolitan modes account for {metro['mode_group_share_pct']:.1f}% of 2025 patronage. Because they carry most trips, weak recovery in metropolitan train and tram has a larger system-wide implication than a weak result in a smaller mode. This is the first connection across the case studies: recovery must be read together with mode share.
+
+### Metropolitan Train is the highest diagnostic priority
+
+{top_priority['mode']} has a 2025 mode share of {top_priority['mode_share_pct']:.1f}% and a recovery rate of {top_priority['recovery_pct']:.1f}% against 2019. That combination creates the largest weighted recovery gap in the current dataset.
+
+For a policy analyst, the next question is not simply "why is recovery low?" The useful question is more specific: which corridors, stations, time periods and user markets are driving the gap, and how much of the pattern is associated with service frequency, reliability, land-use change, office attendance, major projects, fare policy or other context?
+
+### Metropolitan Tram requires a road-interface and land-use lens
+
+{second_priority['mode']} has a 2025 mode share of {second_priority['mode_share_pct']:.1f}% and recovery of {second_priority['recovery_pct']:.1f}% against 2019. Because trams interact strongly with road conditions, intersection delay, inner-city land use, events and CBD travel patterns, mode-level patronage should be connected to route-level performance and traffic signal evidence before recommendations are made.
+
+In a real DTP workflow, this would justify a follow-up pack that brings together route boardings, tram travel-time reliability, signal delay, road congestion, land-use activity and stakeholder feedback. That would support options such as targeted reliability work, signal-priority review or corridor-level service planning.
+
+### Regional/VLine recovery is a different problem: growth, capacity and access
+
+Regional/VLine services have recovered to {regional['recovery_vs_2019_pct']:.1f}% of 2019 as a group. {strongest['mode']} is above its 2019 baseline at {strongest['recovery_pct']:.1f}%. This should not be interpreted as "no problem"; it is a different type of policy question.
+
+The next evidence need is capacity, reliability and access monitoring: are regional corridors experiencing growth pressure, are services reliable enough for current demand, and are timetable or infrastructure constraints emerging? This is where the analysis moves from recovery monitoring into forward planning.
+
+## Action Priority Matrix
+
+The matrix below ranks modes by a simple weighted recovery gap: 2025 mode share multiplied by the positive gap below 100% recovery. This is not a final investment model. It is a management tool for deciding where the next diagnostic effort should go.
+
+{priority_md}
+
+## Recommendations
+
+{recommendation_md}
+
+## What This Means For Daily Policy Analyst Work
+
+This project reflects the kind of evidence workflow a policy analyst would support in a transport department:
+
+- Maintain a monthly dashboard that tracks recovery, mode share, exceptions and data-quality notes.
+- Prepare short manager briefings that explain what changed, why it may matter and what evidence is still missing.
+- Use SQL to make core metrics transparent and repeatable.
+- Use Python to clean, reshape and regenerate outputs quickly when source data updates.
+- Convert technical findings into stakeholder-ready recommendations, including clear caveats.
+- Connect patronage evidence with operational datasets such as service reliability, route/station demand, traffic volumes, signal delay, corridor performance, land-use change and stakeholder feedback.
+
+## Limitations And Next Evidence Needed
+
+The current dataset is monthly and mode-level. It is strong enough for strategic monitoring, recovery comparison and prioritising further analysis. It is not enough to make final corridor, timetable, traffic-signal or investment recommendations.
+
+The next stage should add:
+
+- Station, stop, route or corridor-level patronage.
+- Peak/off-peak and weekday/weekend splits.
+- Service frequency, reliability and cancellation data.
+- Road traffic volumes, travel-time reliability and intersection delay where bus or tram operations interact with road conditions.
+- Signal-priority and corridor performance data for tram and bus reliability questions.
+- Land-use, population, employment-centre and event context.
+- Stakeholder feedback from operators, local government, passengers and planning teams.
+
+## Conclusion
+
+The key conclusion is that the system is not one recovery story. Metropolitan train and tram are large enough and weak enough against the 2019 baseline to justify deeper diagnostic work. Regional/VLine has recovered strongly enough to require growth and capacity monitoring. Bus analysis should connect patronage with road-network performance and signal-priority opportunities. A decision-ready transport policy workflow should therefore move from mode-level monitoring to corridor-level diagnosis, then to targeted options supported by operational and land-use evidence.
 """,
         encoding="utf-8",
     )
@@ -344,6 +628,8 @@ def write_html_dashboard(results: dict[str, pd.DataFrame], long_df: pd.DataFrame
     annual_yoy = results["annual_totals_yoy"]
     latest_share = results["latest_complete_year_mode_share"]
     recovery = results["recovery_vs_2019"]
+    priority_matrix = results["action_priority_matrix"]
+    recommendation_matrix = results["recommendation_matrix"]
     latest_12 = results["latest_12_months"]
     latest_year = int(annual_total["year"].max() - 1)
     latest_total = int(annual_total.loc[annual_total["year"] == latest_year, "total_patronage"].iloc[0])
@@ -360,6 +646,17 @@ def write_html_dashboard(results: dict[str, pd.DataFrame], long_df: pd.DataFrame
 
     latest_table = latest_12.tail(18).to_html(index=False, classes="data-table", border=0)
     yoy_table = annual_yoy.to_html(index=False, classes="data-table", border=0)
+    priority_table = priority_matrix[
+        [
+            "mode",
+            "mode_share_pct",
+            "recovery_pct",
+            "system_gap_weight",
+            "priority_band",
+            "suggested_policy_action",
+        ]
+    ].to_html(index=False, classes="data-table", border=0)
+    recommendation_table = recommendation_matrix.to_html(index=False, classes="data-table", border=0)
 
     HTML_DASHBOARD_PATH.write_text(
         f"""<!doctype html>
@@ -496,10 +793,22 @@ def write_html_dashboard(results: dict[str, pd.DataFrame], long_df: pd.DataFrame
         <h2>Policy Reading</h2>
         <ul class="finding-list">
           <li>Public transport recovery is uneven across modes, so mode-specific diagnosis is more useful than a single network-wide conclusion.</li>
-          <li>Regional/VLine modes recovered more strongly than metropolitan train and tram, suggesting different travel-behaviour and service-planning questions.</li>
-          <li>Monthly mode-level data is strong for strategic monitoring, but route, station, corridor, service frequency and land-use data are needed before operational recommendations.</li>
+          <li>The most useful policy connection is recovery gap multiplied by system share: large modes below baseline deserve deeper diagnosis first.</li>
+          <li>Road-interface evidence matters for bus and tram analysis: traffic flow, intersection delay and signal priority can change reliability and therefore patronage outcomes.</li>
         </ul>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Action Priority Matrix</h2>
+      <p>The matrix combines 2025 mode share with recovery against the 2019 baseline. This avoids treating a small high-recovery mode and a large weak-recovery mode as equally important for system planning.</p>
+      {priority_table}
+    </section>
+
+    <section class="panel">
+      <h2>Recommendations For Further Analysis</h2>
+      <p>These are not final operational decisions. They are the next evidence steps a policy analyst should prepare before advising on service, corridor, signal-priority or investment options.</p>
+      {recommendation_table}
     </section>
 
     <section class="grid-2">
@@ -555,6 +864,11 @@ def main() -> None:
     wide, long_df = load_and_clean()
     write_database(long_df)
     results = run_queries()
+    results["action_priority_matrix"] = build_priority_matrix(results)
+    results["network_group_summary"] = build_network_summary(results)
+    results["recommendation_matrix"] = build_recommendation_matrix(
+        results["action_priority_matrix"], results["network_group_summary"]
+    )
     export_dashboard_data(results, wide, long_df)
 
     latest_year = int(results["annual_total"]["year"].max() - 1)
@@ -575,6 +889,7 @@ def main() -> None:
         "Recovery Against 2019 Baseline by Mode (%)",
     )
     write_policy_brief(results, long_df)
+    write_policy_report(results, long_df)
     write_html_dashboard(results, long_df)
     print(f"Analysis complete. Outputs written to: {PROJECT_DIR}")
 
