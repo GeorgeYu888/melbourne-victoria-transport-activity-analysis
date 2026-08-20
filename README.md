@@ -12,11 +12,12 @@ The repository includes three connected case studies:
 2. Mode-specific recovery and demand pressure.
 3. Dashboard-ready evidence for stakeholder communication.
 
-See `CASE_STUDIES.md` for the detailed portfolio summary.
+The upgraded analysis connects these case studies through an action-priority framework: recovery gap x mode share x next evidence needed. See `REPORT.md` for the full policy analytics report and `CASE_STUDIES.md` for the portfolio summary.
 
 ## Professional Deliverables
 
 - `outputs/transport_policy_dashboard.html` - executive dashboard with KPI cards, trend, recovery analysis, mode share and evidence tables.
+- `REPORT.md` - full policy analytics report with findings, action-priority matrix, recommendations, limitations and next evidence plan.
 - `outputs/policy_brief.md` - one-page policy brief.
 - `CASE_STUDIES.md` - three-part transport policy analytics portfolio summary.
 - `METHODOLOGY.md` - reproducible workflow and rationale for Python, SQL and AI Agent support.
@@ -60,10 +61,13 @@ outputs/
     annual_patronage_by_mode_2025.svg
     recovery_vs_2019_by_mode.svg
   dashboard_data/
+    action_priority_matrix.csv
     annual_by_mode.csv
     annual_total.csv
     latest_12_months.csv
     mode_share.csv
+    network_group_summary.csv
+    recommendation_matrix.csv
     recovery_vs_2019.csv
   policy_brief.md
   transport_policy_dashboard.html
@@ -77,10 +81,10 @@ src/
 
 ```bash
 pip install -r requirements.txt
-python src/analyse_transport_patronage.py
+python3 src/analyse_transport_patronage.py
 ```
 
-The script creates cleaned datasets, a SQLite database, dashboard-ready CSV files, SVG charts, an HTML dashboard and a policy brief.
+The script creates cleaned datasets, a SQLite database, dashboard-ready CSV files, SVG charts, an HTML dashboard, a policy brief and a full policy analytics report.
 
 ## Analysis Steps
 
@@ -90,18 +94,19 @@ The script creates cleaned datasets, a SQLite database, dashboard-ready CSV file
 4. Reshaped the dataset from wide format into a long analytical table with one row per month and mode.
 5. Loaded the cleaned data into SQLite.
 6. Used SQL to calculate annual patronage, mode share, latest 12-month patronage and recovery against the 2019 baseline.
-7. Exported dashboard-ready tables and policy-style findings.
+7. Built an action-priority matrix by connecting recovery gap with mode share.
+8. Exported dashboard-ready tables, policy-style findings, recommendations and a full report.
 
 ## Key Findings
 
-- Total 2025 public transport patronage was 490,207,817.
-- 2025 patronage was 81.3% of the 2019 pre-COVID baseline.
-- V/Line Train showed the strongest recovery against 2019 at 119.36%.
-- Metropolitan Train showed the weakest recovery against 2019 at 75.66%.
+- Total 2025 public transport patronage was 490,207,817, or 81.3% of the 2019 pre-COVID baseline.
+- Metropolitan modes carried 92.06% of 2025 patronage, but metropolitan train and tram remained below 80% of their 2019 baseline.
+- Metropolitan Train is the highest diagnostic priority because it combines the largest 2025 mode share with the largest weighted recovery gap.
+- V/Line Train showed the strongest recovery against 2019 at 119.36%, which is better treated as a growth and capacity monitoring question than a recovery-gap problem.
 
 ## Policy Relevance
 
-This analysis could support DTP-style policy discussion by identifying which modes have recovered more strongly, which modes may require closer investigation and where further evidence could be added. The current project is strategic and mode-level; a next stage would combine patronage with land-use, service frequency, reliability, station/route-level and corridor-level data.
+This analysis could support DTP-style policy discussion by identifying where strategic recovery patterns should become operational investigation. The current project is strategic and mode-level; a next stage would combine patronage with land-use, service frequency, reliability, station/route-level, corridor-level, road traffic, intersection delay and signal-priority data.
 
 ## Limitations
 
@@ -111,4 +116,4 @@ This analysis could support DTP-style policy discussion by identifying which mod
 
 ## Interview Talking Point
 
-I completed this project to refresh and demonstrate applied transport policy analytics. I used Python to clean and restructure open DTP/DataVic data, SQL to calculate repeatable trend and recovery metrics, and dashboard-ready outputs to communicate findings. The portfolio includes three connected case studies: patronage recovery, mode-specific recovery and stakeholder-ready evidence outputs. The main policy lesson is that data analysis should not stop at charts; it should explain the evidence, limitations and next questions for decision-makers.
+I completed this project to refresh and demonstrate applied transport policy analytics. I used Python to clean and restructure open DTP/DataVic data, SQL to calculate repeatable trend and recovery metrics, and dashboard-ready outputs to communicate findings. The portfolio connects three case studies through an action-priority framework: recovery gap, mode share and next evidence needed. The main policy lesson is that data analysis should not stop at charts; it should translate evidence into a manager-ready work program, including limitations, operational data needs and practical recommendations.
