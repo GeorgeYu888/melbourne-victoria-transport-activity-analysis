@@ -2,9 +2,17 @@
 
 ## Overview
 
-This project analyses monthly public transport patronage by mode in Victoria using open DTP/DataVic data. It was built as a practical transport policy analytics project to demonstrate a reproducible workflow:
+This project analyses monthly public transport patronage by mode in Victoria using open DTP/DataVic data. It was built as a practical transport policy analytics portfolio to demonstrate a reproducible workflow:
 
 Raw open data -> Python cleaning -> SQLite/SQL analysis -> dashboard-ready outputs -> policy-style findings.
+
+The repository includes three connected case studies:
+
+1. Patronage recovery against a 2019 baseline.
+2. Mode-specific recovery and demand pressure.
+3. Dashboard-ready evidence for stakeholder communication.
+
+See `CASE_STUDIES.md` for the detailed portfolio summary.
 
 ## Policy Question
 
@@ -27,6 +35,7 @@ How has Victorian public transport patronage changed by mode, and what does the 
 ## Repository Structure
 
 ```text
+CASE_STUDIES.md
 data/
   raw/
     monthly_public_transport_patronage_by_mode.csv
@@ -89,4 +98,4 @@ This analysis could support DTP-style policy discussion by identifying which mod
 
 ## Interview Talking Point
 
-I completed this project to refresh and demonstrate applied transport policy analytics. I used Python to clean and restructure open DTP/DataVic data, SQL to calculate repeatable trend and recovery metrics, and dashboard-ready outputs to communicate findings. The main policy lesson is that data analysis should not stop at charts; it should explain the evidence, limitations and next questions for decision-makers.
+I completed this project to refresh and demonstrate applied transport policy analytics. I used Python to clean and restructure open DTP/DataVic data, SQL to calculate repeatable trend and recovery metrics, and dashboard-ready outputs to communicate findings. The portfolio includes three connected case studies: patronage recovery, mode-specific recovery and stakeholder-ready evidence outputs. The main policy lesson is that data analysis should not stop at charts; it should explain the evidence, limitations and next questions for decision-makers.
