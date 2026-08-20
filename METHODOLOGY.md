@@ -20,8 +20,11 @@ Build a reproducible transport policy analytics workflow that turns open DTP/Dat
    - latest 12 months
    - recovery against 2019 baseline
    - year-on-year change
+   - action-priority matrix
+   - network group summary
+   - recommendation matrix
 9. Export dashboard-ready CSV files.
-10. Generate charts, an HTML dashboard and a policy brief.
+10. Generate charts, an HTML dashboard, a policy brief and a full policy analytics report.
 
 ## Why Python
 
@@ -41,10 +44,22 @@ The project can be rerun with:
 
 ```bash
 pip install -r requirements.txt
-python src/analyse_transport_patronage.py
+python3 src/analyse_transport_patronage.py
 ```
 
-This regenerates the cleaned datasets, SQLite database, dashboard data, charts, HTML dashboard and policy brief.
+This regenerates the cleaned datasets, SQLite database, dashboard data, charts, HTML dashboard, policy brief and full report.
+
+## Action-Priority Framework
+
+The analysis uses a simple decision-support framework:
+
+1. Calculate recovery against the 2019 baseline.
+2. Calculate the latest complete-year mode share.
+3. Calculate the positive baseline gap for modes below 100% recovery.
+4. Weight the gap by mode share to identify where below-baseline recovery has the largest system impact.
+5. Assign a priority band and next evidence requirement.
+
+This framework is not a final investment model. It is a management tool for deciding where the next diagnostic pack should focus.
 
 ## Policy Interpretation Approach
 
@@ -56,3 +71,14 @@ The analysis separates:
 
 This avoids overclaiming from mode-level monthly data and keeps recommendations suitable for a public-sector policy context.
 
+## Next-Stage Data Design
+
+The project deliberately identifies what data would be needed for a more operational DTP-style analysis:
+
+- station, stop, route or corridor patronage
+- peak/off-peak and weekday/weekend demand
+- service frequency, reliability, cancellations and crowding
+- traffic volumes and road travel-time reliability for bus and tram corridors
+- intersection delay and signal-priority evidence
+- land-use, population, employment and event context
+- operator, local government and passenger/stakeholder feedback
