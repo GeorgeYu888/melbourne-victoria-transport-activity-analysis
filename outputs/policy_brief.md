@@ -17,15 +17,20 @@ This project analyses DTP/DataVic monthly public transport patronage by mode to 
 3. Produced dashboard-ready CSV outputs for annual patronage, mode share, latest 12 months and recovery against 2019.
 4. Generated simple chart outputs and a policy-style brief focused on findings, limitations and next steps.
 
-## Key Findings
+## Key Findings And Interpretation
 
 1. Total patronage in 2025 was 490,207,817, equivalent to 81.3% of the 2019 pre-COVID baseline of 603,083,274.
 2. The strongest recovery against 2019 was V/Line Train at 119.36% of baseline.
 3. The weakest recovery against 2019 was Metropolitan Train at 75.66% of baseline.
+4. The highest action-priority mode is Metropolitan Train, because it combines large 2025 mode share with a material recovery gap against 2019.
 
 ## Policy Relevance
 
-The analysis helps identify which public transport modes have recovered more strongly and which may need closer investigation. For DTP-style policy work, this evidence could support questions about service planning, network demand, mode-specific pressures, stakeholder priorities and where more granular corridor, land-use or timetable analysis may be required.
+The analysis helps identify which public transport modes have recovered more strongly and which may need closer investigation. The key policy point is not only whether a mode is above or below baseline; it is whether the mode is large enough to affect the system and whether its recovery pattern points to a concrete next evidence step.
+
+## Recommended Action
+
+Use the action-priority matrix to separate monitoring questions from investigation questions. For metropolitan rail, tram and bus, the next useful evidence would include corridor, station or route-level patronage, peak/off-peak demand, reliability, service frequency, traffic flow, signal delay and land-use context. For V/Line and regional services, the next useful evidence would include capacity, reliability and regional access monitoring.
 
 ## Limitations
 
