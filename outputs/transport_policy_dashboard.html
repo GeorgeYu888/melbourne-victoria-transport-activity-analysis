@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Melbourne/Victoria Transport Policy Analytics Dashboard</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #5d6d7e;
+      --line: #d7dde5;
+      --panel: #f7f9fb;
+      --blue: #1565c0;
+      --green: #13795b;
+      --amber: #9a6500;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.45;
+    }
+    header {
+      padding: 32px 44px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+    main { padding: 24px 44px 48px; max-width: 1240px; margin: 0 auto; }
+    h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: 0; }
+    h2 { margin: 28px 0 12px; font-size: 20px; }
+    h3 { margin: 0 0 8px; font-size: 15px; }
+    p { margin: 0 0 10px; }
+    .subtitle { max-width: 980px; color: var(--muted); font-size: 15px; }
+    .meta { margin-top: 12px; color: var(--muted); font-size: 13px; }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .kpi {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fff;
+      min-height: 116px;
+    }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .kpi .value { font-size: 25px; font-weight: 700; margin: 8px 0 5px; }
+    .kpi .note { color: var(--muted); font-size: 13px; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, .9fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+      margin-bottom: 16px;
+    }
+    .panel.tint { background: var(--panel); }
+    .finding-list { padding-left: 18px; margin: 8px 0 0; }
+    .finding-list li { margin: 8px 0; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 160px minmax(180px, 1fr) 86px;
+      gap: 10px;
+      align-items: center;
+      margin: 9px 0;
+      font-size: 13px;
+    }
+    .bar-track { height: 18px; background: #e9eef5; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--blue); }
+    .bar-value { text-align: right; font-variant-numeric: tabular-nums; }
+    .line-chart { width: 100%; height: auto; }
+    .axis { stroke: #9aa7b6; stroke-width: 1; }
+    .trend-line { fill: none; stroke: var(--blue); stroke-width: 3; }
+    .points circle { fill: var(--green); }
+    .x-labels text, .axis-note { font-size: 12px; fill: var(--muted); font-family: Arial, Helvetica, sans-serif; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .data-table th, .data-table td { border-bottom: 1px solid var(--line); padding: 7px 8px; text-align: left; }
+    .data-table th { background: var(--panel); }
+    .badge {
+      display: inline-block;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      margin: 3px 4px 3px 0;
+      font-size: 12px;
+      background: #fff;
+    }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 18px 44px 34px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    @media (max-width: 900px) {
+      header, main, footer { padding-left: 18px; padding-right: 18px; }
+      .kpi-grid, .grid-2 { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; gap: 4px; }
+      .bar-value { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Melbourne/Victoria Transport Policy Analytics Dashboard</h1>
+    <p class="subtitle">A source-backed dashboard using open DTP/DataVic monthly public transport patronage data. It converts raw mode-level data into repeatable SQL metrics, dashboard-ready evidence and policy-ready interpretation.</p>
+    <p class="meta">Source coverage: January 2018 to June 2026. Latest complete year used for annual comparison: 2025. Generated from Python + SQLite workflow.</p>
+  </header>
+  <main>
+    <section class="kpi-grid" aria-label="Key metrics">
+      <div class="kpi"><div class="label">2025 patronage</div><div class="value">490,207,817</div><div class="note">Total trips across six public transport modes.</div></div>
+      <div class="kpi"><div class="label">Recovery vs 2019</div><div class="value">81.3%</div><div class="note">2019 baseline: 603,083,274.</div></div>
+      <div class="kpi"><div class="label">Strongest recovery</div><div class="value">V/Line Train</div><div class="note">119.36% of 2019 baseline.</div></div>
+      <div class="kpi"><div class="label">Weakest recovery</div><div class="value">Metropolitan Train</div><div class="note">75.66% of 2019 baseline.</div></div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2>Annual Patronage Trend</h2>
+        
+    <svg class="line-chart" viewBox="0 0 900 260" role="img" aria-label="Annual patronage trend">
+      <line x1="70" y1="30" x2="70" y2="210" class="axis"/>
+      <line x1="70" y1="210" x2="870" y2="210" class="axis"/>
+      <polyline points="70.0,30.0 170.0,31.1 270.0,210.0 370.0,202.2 470.0,137.4 570.0,95.9 670.0,79.4 770.0,84.7 870.0,188.4" class="trend-line"/>
+      <g class="points"><circle cx="70.0" cy="30.0" r="4"><title>2018: 605,292,158</title></circle>
+<circle cx="170.0" cy="31.1" r="4"><title>2019: 603,083,274</title></circle>
+<circle cx="270.0" cy="210.0" r="4"><title>2020: 226,823,636</title></circle>
+<circle cx="370.0" cy="202.2" r="4"><title>2021: 243,130,111</title></circle>
+<circle cx="470.0" cy="137.4" r="4"><title>2022: 379,404,227</title></circle>
+<circle cx="570.0" cy="95.9" r="4"><title>2023: 466,669,113</title></circle>
+<circle cx="670.0" cy="79.4" r="4"><title>2024: 501,472,879</title></circle>
+<circle cx="770.0" cy="84.7" r="4"><title>2025: 490,207,817</title></circle>
+<circle cx="870.0" cy="188.4" r="4"><title>2026: 272,222,836</title></circle></g>
+      <g class="x-labels"><text x="70.0" y="242" text-anchor="middle">2018</text>
+<text x="170.0" y="242" text-anchor="middle">2019</text>
+<text x="270.0" y="242" text-anchor="middle">2020</text>
+<text x="370.0" y="242" text-anchor="middle">2021</text>
+<text x="470.0" y="242" text-anchor="middle">2022</text>
+<text x="570.0" y="242" text-anchor="middle">2023</text>
+<text x="670.0" y="242" text-anchor="middle">2024</text>
+<text x="770.0" y="242" text-anchor="middle">2025</text>
+<text x="870.0" y="242" text-anchor="middle">2026</text></g>
+      <text x="14" y="28" class="axis-note">605,292,158</text>
+      <text x="14" y="210" class="axis-note">226,823,636</text>
+    </svg>
+    
+      </div>
+      <div class="panel tint">
+        <h2>Policy Reading</h2>
+        <ul class="finding-list">
+          <li>Public transport recovery is uneven across modes, so mode-specific diagnosis is more useful than a single network-wide conclusion.</li>
+          <li>Regional/VLine modes recovered more strongly than metropolitan train and tram, suggesting different travel-behaviour and service-planning questions.</li>
+          <li>Monthly mode-level data is strong for strategic monitoring, but route, station, corridor, service frequency and land-use data are needed before operational recommendations.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2>Recovery Against 2019 by Mode</h2>
+        
+            <div class="bar-row">
+              <div class="bar-label">V/Line Train</div>
+              <div class="bar-track"><div class="bar-fill" style="width:100.0%"></div></div>
+              <div class="bar-value">119.36%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">V/Line Coach</div>
+              <div class="bar-track"><div class="bar-fill" style="width:87.4%"></div></div>
+              <div class="bar-value">104.38%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Metropolitan Bus</div>
+              <div class="bar-track"><div class="bar-fill" style="width:76.1%"></div></div>
+              <div class="bar-value">90.89%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Regional Bus</div>
+              <div class="bar-track"><div class="bar-fill" style="width:75.2%"></div></div>
+              <div class="bar-value">89.74%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Metropolitan Tram</div>
+              <div class="bar-track"><div class="bar-fill" style="width:64.8%"></div></div>
+              <div class="bar-value">77.38%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Metropolitan Train</div>
+              <div class="bar-track"><div class="bar-fill" style="width:63.4%"></div></div>
+              <div class="bar-value">75.66%</div>
+            </div>
+            
+      </div>
+      <div class="panel">
+        <h2>2025 Mode Share</h2>
+        
+            <div class="bar-row">
+              <div class="bar-label">Metropolitan Train</div>
+              <div class="bar-track"><div class="bar-fill" style="width:100.0%"></div></div>
+              <div class="bar-value">37.78%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Metropolitan Tram</div>
+              <div class="bar-track"><div class="bar-fill" style="width:83.0%"></div></div>
+              <div class="bar-value">31.35%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Metropolitan Bus</div>
+              <div class="bar-track"><div class="bar-fill" style="width:60.7%"></div></div>
+              <div class="bar-value">22.93%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">V/Line Train</div>
+              <div class="bar-track"><div class="bar-fill" style="width:13.9%"></div></div>
+              <div class="bar-value">5.25%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">Regional Bus</div>
+              <div class="bar-track"><div class="bar-fill" style="width:6.4%"></div></div>
+              <div class="bar-value">2.41%</div>
+            </div>
+            
+
+            <div class="bar-row">
+              <div class="bar-label">V/Line Coach</div>
+              <div class="bar-track"><div class="bar-fill" style="width:2.0%"></div></div>
+              <div class="bar-value">0.28%</div>
+            </div>
+            
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Analytical Workflow</h2>
+      <span class="badge">Raw CSV</span>
+      <span class="badge">Python cleaning</span>
+      <span class="badge">Data quality check</span>
+      <span class="badge">Wide-to-long reshape</span>
+      <span class="badge">SQLite evidence base</span>
+      <span class="badge">SQL metrics</span>
+      <span class="badge">Dashboard-ready CSV</span>
+      <span class="badge">Policy brief</span>
+      <p class="meta">This workflow is designed for reproducibility: the dashboard numbers reconcile to exported SQL result tables and the source data remains visible in the repository.</p>
+    </section>
+
+    <section class="grid-2">
+      <div class="panel">
+        <h2>Annual Totals and YoY Change</h2>
+        <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>year</th>
+      <th>total_patronage</th>
+      <th>previous_year_patronage</th>
+      <th>yoy_change_pct</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2018</td>
+      <td>605292158</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>2019</td>
+      <td>603083274</td>
+      <td>605292158.0</td>
+      <td>-0.36</td>
+    </tr>
+    <tr>
+      <td>2020</td>
+      <td>226823636</td>
+      <td>603083274.0</td>
+      <td>-62.39</td>
+    </tr>
+    <tr>
+      <td>2021</td>
+      <td>243130111</td>
+      <td>226823636.0</td>
+      <td>7.19</td>
+    </tr>
+    <tr>
+      <td>2022</td>
+      <td>379404227</td>
+      <td>243130111.0</td>
+      <td>56.05</td>
+    </tr>
+    <tr>
+      <td>2023</td>
+      <td>466669113</td>
+      <td>379404227.0</td>
+      <td>23.00</td>
+    </tr>
+    <tr>
+      <td>2024</td>
+      <td>501472879</td>
+      <td>466669113.0</td>
+      <td>7.46</td>
+    </tr>
+    <tr>
+      <td>2025</td>
+      <td>490207817</td>
+      <td>501472879.0</td>
+      <td>-2.25</td>
+    </tr>
+    <tr>
+      <td>2026</td>
+      <td>272222836</td>
+      <td>490207817.0</td>
+      <td>-44.47</td>
+    </tr>
+  </tbody>
+</table>
+      </div>
+      <div class="panel">
+        <h2>Latest 12 Months Detail</h2>
+        <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>date</th>
+      <th>mode</th>
+      <th>patronage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2026-04-01 00:00:00</td>
+      <td>Metropolitan Bus</td>
+      <td>10494458</td>
+    </tr>
+    <tr>
+      <td>2026-04-01 00:00:00</td>
+      <td>Metropolitan Train</td>
+      <td>22346784</td>
+    </tr>
+    <tr>
+      <td>2026-04-01 00:00:00</td>
+      <td>Metropolitan Tram</td>
+      <td>14820403</td>
+    </tr>
+    <tr>
+      <td>2026-04-01 00:00:00</td>
+      <td>Regional Bus</td>
+      <td>981510</td>
+    </tr>
+    <tr>
+      <td>2026-04-01 00:00:00</td>
+      <td>V/Line Coach</td>
+      <td>153998</td>
+    </tr>
+    <tr>
+      <td>2026-04-01 00:00:00</td>
+      <td>V/Line Train</td>
+      <td>2952841</td>
+    </tr>
+    <tr>
+      <td>2026-05-01 00:00:00</td>
+      <td>Metropolitan Bus</td>
+      <td>10995277</td>
+    </tr>
+    <tr>
+      <td>2026-05-01 00:00:00</td>
+      <td>Metropolitan Train</td>
+      <td>21639441</td>
+    </tr>
+    <tr>
+      <td>2026-05-01 00:00:00</td>
+      <td>Metropolitan Tram</td>
+      <td>15092960</td>
+    </tr>
+    <tr>
+      <td>2026-05-01 00:00:00</td>
+      <td>Regional Bus</td>
+      <td>1098646</td>
+    </tr>
+    <tr>
+      <td>2026-05-01 00:00:00</td>
+      <td>V/Line Coach</td>
+      <td>142874</td>
+    </tr>
+    <tr>
+      <td>2026-05-01 00:00:00</td>
+      <td>V/Line Train</td>
+      <td>2610488</td>
+    </tr>
+    <tr>
+      <td>2026-06-01 00:00:00</td>
+      <td>Metropolitan Bus</td>
+      <td>10013073</td>
+    </tr>
+    <tr>
+      <td>2026-06-01 00:00:00</td>
+      <td>Metropolitan Train</td>
+      <td>16766074</td>
+    </tr>
+    <tr>
+      <td>2026-06-01 00:00:00</td>
+      <td>Metropolitan Tram</td>
+      <td>12536551</td>
+    </tr>
+    <tr>
+      <td>2026-06-01 00:00:00</td>
+      <td>Regional Bus</td>
+      <td>1187220</td>
+    </tr>
+    <tr>
+      <td>2026-06-01 00:00:00</td>
+      <td>V/Line Coach</td>
+      <td>83590</td>
+    </tr>
+    <tr>
+      <td>2026-06-01 00:00:00</td>
+      <td>V/Line Train</td>
+      <td>2270352</td>
+    </tr>
+  </tbody>
+</table>
+      </div>
+    </section>
+  </main>
+  <footer>
+    Built by George Yu as an applied transport policy analytics portfolio. Data source: Department of Transport and Planning / DataVic monthly public transport patronage by mode.
+  </footer>
+</body>
+</html>
