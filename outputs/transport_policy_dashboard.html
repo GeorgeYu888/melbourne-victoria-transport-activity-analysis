@@ -158,10 +158,118 @@
         <h2>Policy Reading</h2>
         <ul class="finding-list">
           <li>Public transport recovery is uneven across modes, so mode-specific diagnosis is more useful than a single network-wide conclusion.</li>
-          <li>Regional/VLine modes recovered more strongly than metropolitan train and tram, suggesting different travel-behaviour and service-planning questions.</li>
-          <li>Monthly mode-level data is strong for strategic monitoring, but route, station, corridor, service frequency and land-use data are needed before operational recommendations.</li>
+          <li>The most useful policy connection is recovery gap multiplied by system share: large modes below baseline deserve deeper diagnosis first.</li>
+          <li>Road-interface evidence matters for bus and tram analysis: traffic flow, intersection delay and signal priority can change reliability and therefore patronage outcomes.</li>
         </ul>
       </div>
+    </section>
+
+    <section class="panel">
+      <h2>Action Priority Matrix</h2>
+      <p>The matrix combines 2025 mode share with recovery against the 2019 baseline. This avoids treating a small high-recovery mode and a large weak-recovery mode as equally important for system planning.</p>
+      <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>mode</th>
+      <th>mode_share_pct</th>
+      <th>recovery_pct</th>
+      <th>system_gap_weight</th>
+      <th>priority_band</th>
+      <th>suggested_policy_action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Metropolitan Train</td>
+      <td>37.78</td>
+      <td>75.66</td>
+      <td>919.57</td>
+      <td>Highest diagnostic priority</td>
+      <td>Prepare a metro deep dive before recommending service or investment options</td>
+    </tr>
+    <tr>
+      <td>Metropolitan Tram</td>
+      <td>31.35</td>
+      <td>77.38</td>
+      <td>709.14</td>
+      <td>Highest diagnostic priority</td>
+      <td>Prepare a metro deep dive before recommending service or investment options</td>
+    </tr>
+    <tr>
+      <td>Metropolitan Bus</td>
+      <td>22.93</td>
+      <td>90.89</td>
+      <td>208.89</td>
+      <td>Monitor and investigate locally</td>
+      <td>Use route-level evidence to test targeted service reliability and priority interventions</td>
+    </tr>
+    <tr>
+      <td>Regional Bus</td>
+      <td>2.41</td>
+      <td>89.74</td>
+      <td>24.73</td>
+      <td>Monitor and investigate locally</td>
+      <td>Use route-level evidence to test targeted service reliability and priority interventions</td>
+    </tr>
+    <tr>
+      <td>V/Line Train</td>
+      <td>5.25</td>
+      <td>119.36</td>
+      <td>0.00</td>
+      <td>Growth and capacity monitoring</td>
+      <td>Monitor whether above-baseline demand is creating capacity, reliability or access pressure</td>
+    </tr>
+    <tr>
+      <td>V/Line Coach</td>
+      <td>0.28</td>
+      <td>104.38</td>
+      <td>0.00</td>
+      <td>Growth and capacity monitoring</td>
+      <td>Monitor whether above-baseline demand is creating capacity, reliability or access pressure</td>
+    </tr>
+  </tbody>
+</table>
+    </section>
+
+    <section class="panel">
+      <h2>Recommendations For Further Analysis</h2>
+      <p>These are not final operational decisions. They are the next evidence steps a policy analyst should prepare before advising on service, corridor, signal-priority or investment options.</p>
+      <table class="dataframe data-table">
+  <thead>
+    <tr style="text-align: right;">
+      <th>decision_area</th>
+      <th>evidence_connection</th>
+      <th>recommendation</th>
+      <th>why_it_matters</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Metropolitan rail and tram recovery</td>
+      <td>Metropolitan modes carry 92.1% of 2025 patronage, while metro train and tram remain below 80% of their 2019 baseline.</td>
+      <td>Commission a corridor/station/route diagnostic that separates peak/off-peak, weekday/weekend, reliability, service level and land-use effects.</td>
+      <td>A weak recovery in high-share modes has the largest system-wide patronage and revenue implications.</td>
+    </tr>
+    <tr>
+      <td>Regional/VLine growth pressure</td>
+      <td>Regional/VLine patronage has recovered to 108.0% of 2019, with V/Line Train and Coach above baseline.</td>
+      <td>Monitor corridor capacity, reliability and regional access outcomes so above-baseline demand is visible before it becomes an operational constraint.</td>
+      <td>Strong recovery in a smaller share of the network can still signal important growth pressure and equity/access questions.</td>
+    </tr>
+    <tr>
+      <td>Bus and road-interface opportunities</td>
+      <td>Metropolitan bus has a material share of 2025 patronage and sits between rail/tram weakness and V/Line strength.</td>
+      <td>Add route-level boardings, travel-time reliability, road congestion and intersection delay data to identify bus priority or signal-priority opportunities.</td>
+      <td>Bus improvements often depend on the road network, so patronage analysis should connect with traffic flow and signal performance evidence.</td>
+    </tr>
+    <tr>
+      <td>Executive reporting discipline</td>
+      <td>The current dataset supports monthly strategic monitoring but not causal or corridor-level conclusions.</td>
+      <td>Maintain a monthly dashboard, exception list and evidence log, and label each recommendation as monitor, investigate, trial or implement.</td>
+      <td>This keeps advice decision-ready while preventing overclaiming from mode-level patronage alone.</td>
+    </tr>
+  </tbody>
+</table>
     </section>
 
     <section class="grid-2">
